@@ -124,10 +124,14 @@ fn main() {
     let mut previous = vec![Polyomino(vec![Coord(0, 0)])];
 
     for n in 2..(up_to + 1) {
-        let current = previous
-            .iter()
-            .flat_map(|polyomino| {
-                polyomino.0.iter().flat_map(|&Coord(x, y)| {
+        let progress = (previous.len() as f64).sqrt() as usize + 1;
+        let current = {
+            let mut result = BTreeMap::new();
+            previous.iter().enumerate().for_each(|(i, polyomino)| {
+                if i != 0 && i % progress == 0 {
+                    println!("Processing {} ({} / {})", n, i / progress, progress);
+                }
+                polyomino.0.iter().for_each(|&Coord(x, y)| {
                     vec![
                         v(polyomino, Coord(x + 1, y)),
                         v(polyomino, Coord(x - 1, y)),
@@ -136,10 +140,16 @@ fn main() {
                     ]
                     .into_iter()
                     .flat_map(|x| x)
-                })
-            })
-            .collect::<BTreeMap<Polyomino, PolyominoSymmetryGroup>>();
+                    .for_each(|(polyomino, symmetry_group)| {
+                        result.insert(polyomino, symmetry_group);
+                    });
+                });
+            });
+            result
+        };
+        println!("{}: done", n);
         save(n, &current);
+        println!("{}: saved", n);
         previous = current
             .into_iter()
             .map(|(polyomino, _)| polyomino)
